@@ -105,7 +105,7 @@ launching Switcher again while it's already running. The window lets you:
 - **Show declutter tip in switcher** — the ⌥⌘H "Hide others" hint that appears at 2+ rows
 - **Hide apps with only minimized windows** — keep fully-minimized apps out of the list
 - **Show only the [N] most recently used apps** — cap the switcher to your N most recent apps (2–12). When it's on, **Cmd+Opt+Tab** shows the full list for that one press of the switcher — handy when the app you want is older than the cap
-- **Excluded apps** — press **X** on a selected app in the switcher to remove only its icon permanently. Restore excluded apps individually from Preferences
+- **Excluded apps** — choose any running app under **Hide an app → Exclude**, or press **X** on a selected app in the switcher. Both remove only its icon permanently; restore apps individually from Preferences
 - **Donate** — support development
 
 The menu bar icon (⌘) also has a quick **Grayscale Icons** toggle, plus Preferences, Donate, and Quit.
