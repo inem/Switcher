@@ -9,5 +9,6 @@ MinimizedStateTests.runAll()
 ShiftTapResolverTests.runAll()
 GridNavigationTests.runAll()
 RecentAppsTests.runAll()
+AppExclusionPolicyTests.runAll()
 
 exit(Check.summarize())

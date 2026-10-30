@@ -21,7 +21,7 @@ A fast, lightweight Cmd+Tab replacement for macOS. No bloat, no lag, no memory l
 - ✅ Instant response (<16ms)
 - ✅ Light memory footprint (releases its UI when idle)
 - ✅ Negligible background CPU (a lightweight permission check, no window polling)
-- ✅ Keyboard shortcuts: H to hide, Q to quit, M to minimize, Cmd+, for Preferences, Shift to go back
+- ✅ Keyboard shortcuts: H to hide, Q to quit, M to minimize, X to exclude, Cmd+, for Preferences, Shift to go back
 - ✅ Mouse support: hover to select, click to activate
 - ✅ Multi-monitor: appears on screen where your pointer is
 - ✅ Optional: show only your N most recent apps — Cmd+Opt+Tab reveals the rest when you need them
@@ -86,6 +86,7 @@ Open **Preferences** (menu bar ⌘) and tick **Start at login** (macOS 13+). Or 
 | H | Hide selected app |
 | Q | Quit selected app |
 | M | Minimize selected app's windows |
+| X | Permanently exclude the selected app from Switcher |
 | , | Open Preferences |
 | Return | Activate |
 | Escape | Dismiss |
@@ -104,6 +105,7 @@ launching Switcher again while it's already running. The window lets you:
 - **Show declutter tip in switcher** — the ⌥⌘H "Hide others" hint that appears at 2+ rows
 - **Hide apps with only minimized windows** — keep fully-minimized apps out of the list
 - **Show only the [N] most recently used apps** — cap the switcher to your N most recent apps (2–12). When it's on, **Cmd+Opt+Tab** shows the full list for that one press of the switcher — handy when the app you want is older than the cap
+- **Excluded apps** — press **X** on a selected app in the switcher to remove only its icon permanently. Restore excluded apps individually from Preferences
 - **Donate** — support development
 
 The menu bar icon (⌘) also has a quick **Grayscale Icons** toggle, plus Preferences, Donate, and Quit.

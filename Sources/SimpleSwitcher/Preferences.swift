@@ -1,4 +1,5 @@
 import Cocoa
+import SwitcherKernels
 
 /// Single source of truth for persisted settings, wrapping `UserDefaults.standard`.
 /// All keys live here so nothing is referenced as a stray string literal.
@@ -15,6 +16,7 @@ enum Preferences {
         static let hideMinimizedOnlyApps = "hideMinimizedOnlyApps"
         static let limitRecentApps = "limitRecentApps"
         static let recentAppsLimit = "recentAppsLimit"
+        static let excludedBundleIdentifiers = "excludedBundleIdentifiers"
         static let launchCount = "launchCount"
         static let hasDonated = "hasDonated"
     }
@@ -80,6 +82,34 @@ enum Preferences {
     static var recentAppsLimit: Int {
         get { defaults.integer(forKey: Key.recentAppsLimit) }
         set { defaults.set(newValue, forKey: Key.recentAppsLimit) }
+    }
+
+    /// Bundle identifiers that never appear in the switcher. The application is
+    /// left running and visible; only Switcher's candidate list is filtered.
+    static var excludedBundleIdentifiers: [String] {
+        get {
+            AppExclusionPolicy.normalizedIdentifiers(
+                defaults.stringArray(forKey: Key.excludedBundleIdentifiers) ?? []
+            )
+        }
+        set {
+            defaults.set(AppExclusionPolicy.normalizedIdentifiers(newValue),
+                         forKey: Key.excludedBundleIdentifiers)
+        }
+    }
+
+    static func isExcluded(bundleIdentifier: String?) -> Bool {
+        AppExclusionPolicy.contains(bundleIdentifier, in: excludedBundleIdentifiers)
+    }
+
+    static func exclude(bundleIdentifier: String) {
+        excludedBundleIdentifiers.append(bundleIdentifier)
+    }
+
+    static func restore(bundleIdentifier: String) {
+        excludedBundleIdentifiers = excludedBundleIdentifiers.filter {
+            $0.caseInsensitiveCompare(bundleIdentifier) != .orderedSame
+        }
     }
 
     static var launchCount: Int {

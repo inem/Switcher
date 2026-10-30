@@ -104,6 +104,10 @@ class AppListProvider {
 
             guard !app.isHidden else { return nil }
 
+            // A persistent exclusion removes only the app's switcher icon. It
+            // does not hide, quit or otherwise modify the running application.
+            guard !Preferences.isExcluded(bundleIdentifier: app.bundleIdentifier) else { return nil }
+
             guard app.processIdentifier != selfPID else { return nil }
 
             let badge = badges[app.bundleIdentifier ?? ""]
@@ -318,10 +322,15 @@ class AppListProvider {
         let apps = allVisibleApps()
         let listed = Set(apps.map { $0.pid })
         let cutoff = Preferences.limitRecentApps ? max(1, Preferences.recentAppsLimit) : Int.max
+        let runningApps = NSWorkspace.shared.runningApplications
+        let runningByPID = Dictionary(uniqueKeysWithValues: runningApps.map {
+            ($0.processIdentifier, $0)
+        })
 
         print("hideMinimizedOnlyApps: \(Preferences.hideMinimizedOnlyApps)")
         print("limitRecentApps: \(Preferences.limitRecentApps)"
               + (Preferences.limitRecentApps ? " (\(Preferences.recentAppsLimit) apps)" : ""))
+        print("excludedBundleIdentifiers: \(Preferences.excludedBundleIdentifiers)")
         print("accepted windows: \(windows.count) (\(windows.filter { $0.onScreen }.count) on-screen, "
               + "\(windows.filter { !$0.onScreen && $0.keepsAppListed }.count) off-screen kept, "
               + "\(windows.filter { $0.rejection == .minimized }.count) minimized-rejected, "
@@ -349,13 +358,22 @@ class AppListProvider {
         }
 
         // Apps that owned windows but did not make the list — the interesting half.
-        let excluded = byPID.filter { !listed.contains($0.key) }
-        if !excluded.isEmpty {
-            print("\nEXCLUDED (owned accepted windows but not listed):")
-            for (pid, mine) in excluded {
-                let name = mine.first?.ownerName ?? "pid \(pid)"
+        var excludedPIDs = Set(byPID.keys.filter { !listed.contains($0) })
+        excludedPIDs.formUnion(runningApps.compactMap { app in
+            Preferences.isExcluded(bundleIdentifier: app.bundleIdentifier)
+                ? app.processIdentifier
+                : nil
+        })
+        if !excludedPIDs.isEmpty {
+            print("\nEXCLUDED (running apps or window owners not listed):")
+            for pid in excludedPIDs.sorted() {
+                let mine = byPID[pid] ?? []
+                let runningApp = runningByPID[pid]
+                let name = runningApp?.localizedName ?? mine.first?.ownerName ?? "pid \(pid)"
                 let reason: String
-                if mine.contains(where: { $0.rejection == .minimized }) {
+                if Preferences.isExcluded(bundleIdentifier: runningApp?.bundleIdentifier) {
+                    reason = "persistently excluded (\(runningApp?.bundleIdentifier ?? "unknown bundle id"))"
+                } else if mine.contains(where: { $0.rejection == .minimized }) {
                     let helpers = mine.filter { $0.rejection == .notSwitchable }.count
                     reason = "minimized-rejected" + (helpers > 0 ? " (+\(helpers) helper-windows)" : "")
                 } else if mine.allSatisfy({ $0.rejection == .notSwitchable }) {

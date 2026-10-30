@@ -23,13 +23,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, HotkeyManagerDelegate, AppSw
     // Polls for newly-opened apps while the panel is shown, so their icons appear as
     // soon as their windows render (see startAppListRefresh).
     private var appListRefreshTimer: DispatchSourceTimer?
-    // Apps the user removed with H / Q / M during THIS panel session. The live
-    // refresh must never re-add them: those actions all complete asynchronously,
-    // so getVisibleApps() keeps reporting the app for a while afterwards — and
-    // since it is no longer in currentApps, the refresh would mistake it for a
-    // newly launched app and append it at the end of the grid. Minimize makes
-    // this obvious (one AX call per window, into the target app), but hide and
-    // quit race it too; they usually just win.
+    // Apps the user removed with H / Q / M / X during THIS panel session. The live
+    // refresh must never re-add them. H/Q/M complete asynchronously, so
+    // getVisibleApps() can keep reporting the app for a while; X is filtered by
+    // its new persistent preference immediately, but shares the same monotonic
+    // removal path and recent-app allowance accounting.
     private var actedOnPIDs = Set<pid_t>()
     // True when THIS panel session shows the full uncapped list (⌥⌘Tab past the
     // recent-apps cap). One-shot: openPanel decides it afresh on every open, so
@@ -261,6 +259,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, HotkeyManagerDelegate, AppSw
         case kVK_ANSI_Q:
             quitSelectedApp()
 
+        case kVK_ANSI_X:
+            excludeSelectedApp()
+
         case kVK_ANSI_Comma:
             // Cmd+, — the macOS-wide Preferences shortcut. Dismiss first: the panel
             // is a non-activating overlay and showPreferences() activates Switcher,
@@ -309,6 +310,26 @@ class AppDelegate: NSObject, NSApplicationDelegate, HotkeyManagerDelegate, AppSw
         appToHide.app.hide()
         actedOnPIDs.insert(appToHide.pid)
         currentApps.removeAll { $0.pid == appToHide.pid }
+
+        if !panel.hasApps {
+            dismissPanel()
+        }
+    }
+
+    /// Permanently remove the selected app from Switcher's candidate list while
+    /// leaving the app itself untouched. Preferences provides the restore path.
+    private func excludeSelectedApp() {
+        guard let selectedApp = panel.getSelectedApp(),
+              let bundleIdentifier = selectedApp.app.bundleIdentifier,
+              !bundleIdentifier.isEmpty else {
+            NSSound.beep()
+            return
+        }
+
+        Preferences.exclude(bundleIdentifier: bundleIdentifier)
+        guard let excludedApp = panel.removeSelectedApp() else { return }
+        actedOnPIDs.insert(excludedApp.pid)
+        currentApps.removeAll { $0.pid == excludedApp.pid }
 
         if !panel.hasApps {
             dismissPanel()
@@ -419,7 +440,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, HotkeyManagerDelegate, AppSw
     /// make room — `appendApps` only ever grows the grid — so without this the
     /// panel walks past the limit as apps launch.
     ///
-    /// Apps removed with H/Q/M count against the allowance (via `actedOnPIDs`)
+    /// Apps removed with H/Q/M/X count against the allowance (via `actedOnPIDs`)
     /// rather than freeing a slot. Otherwise culling app #3 would promote the old
     /// #6 into range and the refresh would pop it in ~300ms later, refilling the
     /// panel as fast as the user empties it. Removals stay monotonic within a

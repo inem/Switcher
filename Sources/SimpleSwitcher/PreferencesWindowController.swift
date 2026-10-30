@@ -20,12 +20,14 @@ class PreferencesWindowController: NSWindowController {
     private var limitRecentCheckbox: NSButton!
     private var recentLimitPopup: NSPopUpButton!
     private var limitHintLabel: NSTextField!
+    private var excludedAppsPopup: NSPopUpButton!
+    private var restoreExcludedButton: NSButton!
 
     convenience init() {
         let window = NSWindow(
             // Height must cover every stack row; a new checkbox needs ~32pt more
             // (the recent-apps hint sub-row accounts for 18 of the current total).
-            contentRect: NSRect(x: 0, y: 0, width: 380, height: 320),
+            contentRect: NSRect(x: 0, y: 0, width: 440, height: 375),
             styleMask: [.titled, .closable],
             backing: .buffered,
             defer: false
@@ -102,6 +104,32 @@ class PreferencesWindowController: NSWindowController {
         limitHintLabel.font = .systemFont(ofSize: 11)
         limitHintLabel.textColor = .secondaryLabelColor
 
+        excludedAppsPopup = NSPopUpButton()
+        excludedAppsPopup.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        excludedAppsPopup.widthAnchor.constraint(greaterThanOrEqualToConstant: 185).isActive = true
+
+        restoreExcludedButton = NSButton(
+            title: "Restore",
+            target: self,
+            action: #selector(restoreExcludedApp)
+        )
+        restoreExcludedButton.bezelStyle = .rounded
+
+        let excludedRow = NSStackView(views: [
+            NSTextField(labelWithString: "Excluded apps"),
+            excludedAppsPopup,
+            restoreExcludedButton,
+        ])
+        excludedRow.orientation = .horizontal
+        excludedRow.alignment = .firstBaseline
+        excludedRow.spacing = 6
+
+        let exclusionHintLabel = NSTextField(
+            labelWithString: "Press X in the switcher to exclude the selected app"
+        )
+        exclusionHintLabel.font = .systemFont(ofSize: 11)
+        exclusionHintLabel.textColor = .secondaryLabelColor
+
         let donateButton = NSButton(title: "❤️ Donate", target: self, action: #selector(donate))
         donateButton.bezelStyle = .rounded
 
@@ -120,6 +148,8 @@ class PreferencesWindowController: NSWindowController {
             hideMinimizedCheckbox,
             limitRow,
             limitHintLabel,
+            excludedRow,
+            exclusionHintLabel,
             donateButton,
             quitButton,
             versionLabel
@@ -129,6 +159,7 @@ class PreferencesWindowController: NSWindowController {
         stack.spacing = 14
         stack.translatesAutoresizingMaskIntoConstraints = false
         stack.setCustomSpacing(3, after: limitRow)  // the hint reads as part of its row
+        stack.setCustomSpacing(3, after: excludedRow)
         contentView.addSubview(stack)
 
         NSLayoutConstraint.activate([
@@ -164,6 +195,33 @@ class PreferencesWindowController: NSWindowController {
         }
         recentLimitPopup.isEnabled = Preferences.limitRecentApps
         limitHintLabel.isHidden = !Preferences.limitRecentApps
+        syncExcludedApps()
+    }
+
+    private func syncExcludedApps() {
+        excludedAppsPopup.removeAllItems()
+        let identifiers = Preferences.excludedBundleIdentifiers
+
+        guard !identifiers.isEmpty else {
+            excludedAppsPopup.addItem(withTitle: "No excluded apps")
+            excludedAppsPopup.isEnabled = false
+            restoreExcludedButton.isEnabled = false
+            return
+        }
+
+        for identifier in identifiers {
+            let title: String
+            if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: identifier) {
+                title = FileManager.default.displayName(atPath: url.path)
+            } else {
+                title = identifier
+            }
+            excludedAppsPopup.addItem(withTitle: title)
+            excludedAppsPopup.lastItem?.representedObject = identifier
+            excludedAppsPopup.lastItem?.toolTip = identifier
+        }
+        excludedAppsPopup.isEnabled = true
+        restoreExcludedButton.isEnabled = true
     }
 
     private func versionString() -> String {
@@ -214,6 +272,12 @@ class PreferencesWindowController: NSWindowController {
     @objc private func changeRecentLimit() {
         guard let title = recentLimitPopup.titleOfSelectedItem, let count = Int(title) else { return }
         Preferences.recentAppsLimit = count
+    }
+
+    @objc private func restoreExcludedApp() {
+        guard let identifier = excludedAppsPopup.selectedItem?.representedObject as? String else { return }
+        Preferences.restore(bundleIdentifier: identifier)
+        syncExcludedApps()
     }
 
     @objc private func donate() {
