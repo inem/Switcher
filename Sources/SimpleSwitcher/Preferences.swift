@@ -17,8 +17,6 @@ enum Preferences {
         static let limitRecentApps = "limitRecentApps"
         static let recentAppsLimit = "recentAppsLimit"
         static let excludedBundleIdentifiers = "excludedBundleIdentifiers"
-        static let launchCount = "launchCount"
-        static let hasDonated = "hasDonated"
     }
 
     private static let defaults = UserDefaults.standard
@@ -112,24 +110,12 @@ enum Preferences {
         }
     }
 
-    static var launchCount: Int {
-        get { defaults.integer(forKey: Key.launchCount) }
-        set { defaults.set(newValue, forKey: Key.launchCount) }
-    }
-
-    static var hasDonated: Bool {
-        get { defaults.bool(forKey: Key.hasDonated) }
-        set { defaults.set(newValue, forKey: Key.hasDonated) }
-    }
-
     // MARK: - Donations
 
     static let donateURL = URL(string: "https://ko-fi.com/cheetah9960")!
 
-    /// The single choke point for donating: records that the user donated (so the
-    /// nag never shows again) and opens the donation page.
+    /// The single choke point for the voluntary Donate controls.
     static func openDonatePage() {
-        hasDonated = true
         NSWorkspace.shared.open(donateURL)
     }
 }

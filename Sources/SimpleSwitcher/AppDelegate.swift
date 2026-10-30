@@ -37,12 +37,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, HotkeyManagerDelegate, AppSw
     private var isHandlingRevocation = false
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // Settings: register in-process fallbacks before any read, then count this
-        // launch. Must precede startObserving, whose MRU seed queries the window
+        // Settings: register in-process fallbacks before any read. Must precede
+        // startObserving, whose MRU seed queries the window
         // list and would otherwise read hideMinimizedOnlyApps as an unregistered
         // false, seeding from windows the switcher will never show.
         Preferences.registerDefaults()
-        Preferences.launchCount += 1
 
         AppListProvider.startObserving()
 
@@ -87,12 +86,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, HotkeyManagerDelegate, AppSw
         }
         // Reconcile continuously, so a grant takes effect without a relaunch.
         startPermissionMonitor()
-
-        // Nag AFTER switching is live, and deferred: runModal() blocks this
-        // method, and anything sequenced behind it, until the user answers.
-        DispatchQueue.main.async { [weak self] in
-            self?.maybeShowDonationNag()
-        }
 
         print("SimpleSwitcher started. Press Cmd+Tab to activate.")
     }
@@ -529,20 +522,4 @@ class AppDelegate: NSObject, NSApplicationDelegate, HotkeyManagerDelegate, AppSw
         }
     }
 
-    /// On startup only: every 5th launch (until the user donates) surface
-    /// Preferences alongside a donation prompt. Donating silences it forever.
-    private func maybeShowDonationNag() {
-        guard !Preferences.hasDonated, Preferences.launchCount % 5 == 0 else { return }
-
-        showPreferences()
-
-        let alert = NSAlert()
-        alert.messageText = "Enjoying Switcher?"
-        alert.informativeText = "If it's useful, consider supporting development."
-        alert.addButton(withTitle: "Donate")
-        alert.addButton(withTitle: "Maybe Later")
-        if alert.runModal() == .alertFirstButtonReturn {
-            Preferences.openDonatePage()
-        }
-    }
 }

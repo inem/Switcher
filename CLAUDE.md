@@ -142,10 +142,10 @@ swift-testing is mechanical — one `Check` call per assertion.
 
 **Preferences.swift**
 - `enum Preferences`: single source of truth for persisted settings over `UserDefaults.standard`
-- Keys: `grayscaleIcons`, `showMenuBarIcon` (defaults to true), `showDeclutterTip` (defaults to true), `hideMinimizedOnlyApps` (defaults to true), `limitRecentApps`, `recentAppsLimit` (defaults to 7), `excludedBundleIdentifiers`, `launchCount`, `hasDonated`
+- Keys: `grayscaleIcons`, `showMenuBarIcon` (defaults to true), `showDeclutterTip` (defaults to true), `hideMinimizedOnlyApps` (defaults to true), `limitRecentApps`, `recentAppsLimit` (defaults to 7), `excludedBundleIdentifiers`
 - The recent-apps cap is deliberately **two** keys rather than "0 means off": switching it off and back on must not discard a tuned count. The count is registered, the switch is not (so it ships off, like `grayscaleIcons`)
 - `registerDefaults()` must run before any read on every launch (`register(defaults:)` does not persist)
-- `openDonatePage()`: the one choke point for donating — sets `hasDonated = true`, then opens the Ko-fi URL
+- `openDonatePage()`: the one choke point for the voluntary Donate controls; it opens the Ko-fi URL
 
 **StatusBarController.swift**
 - Owns the optional menu bar icon (`NSStatusItem`), held by a strong reference (system does not retain it)
@@ -164,7 +164,7 @@ swift-testing is mechanical — one `Check` call per assertion.
 
 **Preferences / menu bar / donation flow (AppDelegate)**
 - App starts silently — the Preferences window does NOT auto-open on every launch
-- On startup it auto-surfaces (with a Donate / Maybe Later prompt) only when `!hasDonated && launchCount % 5 == 0`. The nag is deferred (async, after `enableSwitching`/`startPermissionMonitor`) because `runModal()` would otherwise block the Cmd+Tab takeover until answered
+- No donation prompt is shown automatically; Donate is available only through explicit controls in Preferences and the menu bar
 - On demand: the menu bar Preferences… item, or relaunching the app (`applicationShouldHandleReopen` surfaces the window)
 - `applicationShouldTerminateAfterLastWindowClosed` returns false so closing Preferences keeps the agent running
 
