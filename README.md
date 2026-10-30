@@ -55,6 +55,18 @@ swift build -c release
 ./build-app.sh release
 ```
 
+For repeated local development installs, use:
+
+```bash
+./install-local.sh release
+```
+
+Because local builds are ad-hoc signed, this helper quits the installed copy,
+installs the new build, resets the stale Accessibility decision with `tccutil`,
+and relaunches Switcher. macOS still requires you to enable the new build in
+**System Settings → Privacy & Security → Accessibility**; no app can grant that
+permission to itself.
+
 ### First Run
 
 1. Open **Switcher.app**

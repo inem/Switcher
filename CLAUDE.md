@@ -390,6 +390,12 @@ Since Apple's documentation for these low-level APIs is sparse or nonexistent, A
 ### Switcher doesn't intercept Cmd+Tab (no Accessibility permission)
 This is now handled gracefully: the app leaves native Cmd+Tab working and polls for the grant. Enable Switcher under System Settings > Privacy & Security > Accessibility and it takes over within ~1s — no relaunch needed. Because the app is ad-hoc signed, rebuilding it can invalidate a prior grant (remove + re-add the entry).
 
+For repeated local development installs, use `./install-local.sh release`.
+It builds and installs the app, terminates only the installed Switcher executable,
+resets the old `Accessibility` TCC decision for `com.simpleswitcher.app`, and
+relaunches. The reset is intentionally local-only and cannot grant permission;
+the user must still enable the newly signed build in System Settings.
+
 ### Native Cmd+Tab still works
 Either Accessibility isn't granted yet (see above — expected), or the app crashed via SIGKILL without restoring the hotkey. SIGTERM/SIGINT/crashes restore it automatically; for SIGKILL, run the app again and quit cleanly, or log out/restart.
 
